@@ -392,10 +392,10 @@ Chat, payments, mobile app, public circle directory, social feed, likes, file up
 
 | Day | Title | Status | Fallback |
 | --- | --- | --- | --- |
-| 1 | Promise + Oracle stack | Not started | Shorter README only |
-| 2 | Schema + profiles | Not started | No optional profile fields |
-| 3 | App on Oracle | Not started | Local + tunnel only until Day 5 |
-| 4 | Auth + profile | Not started | Display name only |
+| 1 | Promise + Oracle stack | Done | Shorter README only |
+| 2 | Schema + profiles | Done | No optional profile fields |
+| 3 | App on Oracle | Done | Local + tunnel only until Day 5 |
+| 4 | Auth + profile | Done | Display name only |
 | 5 | Create circle + code | Not started | Owner-only, no code yet |
 | 6 | Join + see profiles | Not started | Owner adds email manually |
 | 7 | Notes + handoff | Not started | Notes without received_at |

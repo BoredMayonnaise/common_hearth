@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { getServerSession } from "next-auth";
 import pool from "@/lib/db";
 import { authOptions } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import SignOutButton from "./signout-button";
 
 async function DbStatus() {
@@ -34,6 +35,7 @@ async function Account() {
     [uid]
   );
   const p = res.rows[0];
+  if (!p) redirect("/profile");
   return (
     <section>
       <p>Signed in as <strong>{session?.user?.email}</strong></p>
