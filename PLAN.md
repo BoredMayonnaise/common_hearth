@@ -401,7 +401,7 @@ Chat, payments, mobile app, public circle directory, social feed, likes, file up
 | 7 | Notes + handoff | Done | Notes without received_at |
 | 8 | Access control | Done | **Delay launch** |
 | 9 | Edit / archive / a11y | Done | Edit only |
-| 10 | Public landing | Not started | Minimal “Sign up / Join” links |
+| 10 | Public landing | Done | Minimal “Sign up / Join” links |
 | 11 | Break tests | Not started | Five manual checks |
 | 12 | Docs + sample note | Not started | Sample note in README only |
 | 13 | HTTPS production | Not started | Stay on staging URL |
