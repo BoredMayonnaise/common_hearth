@@ -1,9 +1,10 @@
-import { Suspense } from "react";
 import { connection } from "next/server";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+
+export const instant = false;
 
 async function CircleBody() {
   await connection();
@@ -26,12 +27,10 @@ async function CircleBody() {
   );
 }
 
-export default function Page() {
+export default async function Page() {
   return (
     <main className="mx-auto max-w-2xl p-8 font-sans">
-      <Suspense fallback={<p>Loading…</p>}>
-        <CircleBody />
-      </Suspense>
+      <CircleBody />
     </main>
   );
 }

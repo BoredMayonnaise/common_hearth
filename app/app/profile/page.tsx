@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { connection } from "next/server";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
@@ -22,6 +21,8 @@ async function saveProfile(formData: FormData) {
   );
   redirect("/");
 }
+
+export const instant = false;
 
 async function ProfileBody() {
   await connection();
@@ -53,12 +54,10 @@ async function ProfileBody() {
   );
 }
 
-export default function Page() {
+export default async function Page() {
   return (
     <main className="mx-auto max-w-md p-8 font-sans">
-      <Suspense fallback={<p>Loading…</p>}>
-        <ProfileBody />
-      </Suspense>
+      <ProfileBody />
     </main>
   );
 }
