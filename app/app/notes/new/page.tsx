@@ -41,8 +41,9 @@ async function createNote(formData: FormData) {
   redirect("/notes");
 }
 
-async function NewNoteBody() {
+async function NewNoteBody({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   await connection();
+  const sp = await searchParams;
   const session = await getServerSession(authOptions);
   const uid = (session?.user as { id?: string } | undefined)?.id;
   if (!uid) redirect("/login");
@@ -55,6 +56,7 @@ async function NewNoteBody() {
   return (
     <>
       <h1 className="text-2xl font-semibold mb-4">Write a practice note</h1>
+      {sp?.error && <p className="mb-4 text-red-600">Please fill in title, situation, steps, and never promise.</p>}
       <form action={createNote} className="grid gap-3">
         <label>Circle
           <select name="circle_id" required className="mt-1 block w-full rounded border border-gray-300 p-2">
@@ -97,10 +99,10 @@ async function NewNoteBody() {
   );
 }
 
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   return (
     <main className="mx-auto max-w-2xl p-8 font-sans">
-      <NewNoteBody />
+      <NewNoteBody searchParams={searchParams} />
     </main>
   );
 }

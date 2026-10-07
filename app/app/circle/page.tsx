@@ -71,7 +71,7 @@ async function joinCircle(formData: FormData) {
   redirect("/circle");
 }
 
-async function CircleBody({ searchParams }: { searchParams: Promise<{ join?: string }> }) {
+async function CircleBody({ searchParams }: { searchParams: Promise<{ join?: string; error?: string }> }) {
   await connection();
   const sp = await searchParams;
   const session = await getServerSession(authOptions);
@@ -100,6 +100,7 @@ async function CircleBody({ searchParams }: { searchParams: Promise<{ join?: str
       {typeof sp?.join === "string" && sp.join !== "" && (
         <p className="mb-4 text-red-600">That code does not work or has expired.</p>
       )}
+      {sp?.error && <p className="mb-4 text-red-600">Please give the circle a name.</p>}
       {res.rows.length === 0 ? (
         <p className="mb-4">No circle yet. Start one below, or join with a code on Day 6.</p>
       ) : (
@@ -154,7 +155,7 @@ async function CircleBody({ searchParams }: { searchParams: Promise<{ join?: str
   );
 }
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ join?: string }> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<{ join?: string; error?: string }> }) {
   return (
     <main className="mx-auto max-w-2xl p-8 font-sans">
       <CircleBody searchParams={searchParams} />
