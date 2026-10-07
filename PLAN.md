@@ -405,4 +405,4 @@ Chat, payments, mobile app, public circle directory, social feed, likes, file up
 | 11 | Break tests | Done | Five manual checks |
 | 12 | Docs + sample note | Done | Sample note in README only |
 | 13 | HTTPS production | Done | Stay on staging URL |
-| 14 | Soft launch | Not started | You + second account only |
+| 14 | Soft launch | Done | You + second account only |

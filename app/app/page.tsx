@@ -31,6 +31,7 @@ async function HomeBody() {
           <a className="rounded border border-sky-700 px-4 py-2 text-sky-700 no-underline" href="/signup?join=1">Join with a code</a>
         </div>
         <p className="mt-6 text-sm text-gray-600">Circles are private. Profiles are only visible to people in your circle.</p>
+        <p className="mt-4 text-sm text-gray-700">Want to look around first? Join the demo circle with code <code className="rounded bg-gray-100 px-2 py-1 font-mono">demo-hearth</code> after signing up.</p>
         <p className="mt-2 text-sm text-gray-600">Already have an account? <a className="text-sky-700 underline" href="/login">Sign in</a>.</p>
       </>
     );
