@@ -1,5 +1,7 @@
 # Day 11 checkpoint — break it
 
+(Re-run 2026-10-07 over HTTPS in Day 13: all pass.)
+
 Script: `tests/checkpoint.py` (Playwright, run against the live site).
 
 | Test | Result |

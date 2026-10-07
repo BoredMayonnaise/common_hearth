@@ -1,7 +1,7 @@
 """Day 11 checkpoint: five break-it tests against the live site."""
 from playwright.sync_api import sync_playwright
 
-BASE = "http://134.185.84.235"
+BASE = "https://commonhearth.duckdns.org"
 results = []
 
 def check(name, ok):

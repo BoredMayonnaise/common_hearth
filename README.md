@@ -36,7 +36,7 @@ One small Compute VM (free tier eligible) running Postgres in Docker, Node for t
 2. App: `cd app && npm install && npm run build`.
 3. Env vars in `app/.env.local` (never commit): `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
 4. `systemctl start common-hearth` (unit runs `next start -p 8099`); nginx proxies the public IP on :80 to it.
-5. Point a phone at `http://134.185.84.235/` to verify.
+5. Live: `https://commonhearth.duckdns.org/` (Let’s Encrypt via certbot --nginx; HTTP redirects to HTTPS). Phone check: open the HTTPS URL.
 
 ## Access model
 

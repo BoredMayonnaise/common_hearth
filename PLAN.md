@@ -404,5 +404,5 @@ Chat, payments, mobile app, public circle directory, social feed, likes, file up
 | 10 | Public landing | Done | Minimal “Sign up / Join” links |
 | 11 | Break tests | Done | Five manual checks |
 | 12 | Docs + sample note | Done | Sample note in README only |
-| 13 | HTTPS production | Not started | Stay on staging URL |
+| 13 | HTTPS production | Done | Stay on staging URL |
 | 14 | Soft launch | Not started | You + second account only |
