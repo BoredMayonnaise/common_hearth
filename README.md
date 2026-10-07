@@ -29,3 +29,23 @@ One small Compute VM (free tier eligible) running Postgres in Docker, Node for t
 - `DESIGN.md` — data model and UI direction
 - `SKILLS.md` — skills/tools by day
 - `AGENTS.md` — AI contributor rules
+
+## Run it (Oracle VM)
+
+1. Postgres: `docker run -d --name common-hearth-postgres -e POSTGRES_PASSWORD=... -e POSTGRES_DB=common_hearth -p 127.0.0.1:5436:5432 postgres:16-alpine`, then `psql -f schema.sql`.
+2. App: `cd app && npm install && npm run build`.
+3. Env vars in `app/.env.local` (never commit): `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
+4. `systemctl start common-hearth` (unit runs `next start -p 8099`); nginx proxies the public IP on :80 to it.
+5. Point a phone at `http://134.185.84.235/` to verify.
+
+## Access model
+
+Every circle-scoped read/write goes through server code that checks the
+signed-in user has a `memberships` row for that circle. No RLS for MVP;
+see `SECURITY.md`. Invite codes are the join path; there is no public
+circle directory.
+
+## Demo circle
+
+Sample circle "Common Hearth Demo" seeded with the sample practice note;
+invite code `demo-hearth`.
