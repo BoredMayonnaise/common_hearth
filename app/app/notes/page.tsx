@@ -79,6 +79,7 @@ async function NotesBody() {
                 {n.handoff_on ? new Date(n.handoff_on).toLocaleDateString() : "none"} ·{" "}
                 {n.received_at ? `received ${new Date(n.received_at).toLocaleDateString()}` : "not received"}
               </p>
+              <p className="mt-2"><a className="text-sky-700 underline" href={`/notes/${n.id}/edit`}>Edit</a></p>
               {!n.received_at && (
                 <form action={markReceived} className="mt-2">
                   <input type="hidden" name="note_id" value={n.id} />
