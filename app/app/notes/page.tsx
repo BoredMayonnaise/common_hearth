@@ -45,7 +45,7 @@ async function NotesBody() {
      ORDER BY n.handoff_on NULLS LAST, n.created_at`,
     [uid]
   );
-  const carrying = notes.rows.filter((n) => !n.received_at);
+  const carrying = notes.rows.filter((n) => !n.received_at && n.carrier_name);
   return (
     <>
       <h1 className="text-2xl font-semibold mb-4">Practice notes</h1>
