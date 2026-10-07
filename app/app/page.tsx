@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { getServerSession } from "next-auth";
 import pool from "@/lib/db";
 import { authOptions } from "@/lib/auth";
+import SignOutButton from "./signout-button";
 
 async function DbStatus() {
   await connection();
@@ -47,7 +48,7 @@ async function Account() {
       <p>
         <a className="text-sky-700 underline" href="/circle">Your circle</a> ·{" "}
         <a className="text-sky-700 underline" href="/profile">Edit profile</a> ·{" "}
-        <a className="text-sky-700 underline" href="/api/auth/signout">Sign out</a>
+        <SignOutButton />
       </p>
     </section>
   );
