@@ -15,7 +15,12 @@ async function DbStatus() {
   } catch {
     dbStatus = "error";
   }
-  return <p className="text-sm text-green-700">Database: {dbStatus}</p>;
+  return (
+    <>
+      <p className="text-sm text-green-700">Database: {dbStatus}</p>
+      <p className="mb-2"><a className="text-sky-700 underline" href="/notes">Practice notes</a></p>
+    </>
+  );
 }
 
 async function Account() {
