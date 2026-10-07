@@ -397,7 +397,7 @@ Chat, payments, mobile app, public circle directory, social feed, likes, file up
 | 3 | App on Oracle | Done | Local + tunnel only until Day 5 |
 | 4 | Auth + profile | Done | Display name only |
 | 5 | Create circle + code | Done | Owner-only, no code yet |
-| 6 | Join + see profiles | Not started | Owner adds email manually |
+| 6 | Join + see profiles | Done | Owner adds email manually |
 | 7 | Notes + handoff | Not started | Notes without received_at |
 | 8 | Access control | Not started | **Delay launch** |
 | 9 | Edit / archive / a11y | Not started | Edit only |
