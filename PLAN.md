@@ -399,7 +399,7 @@ Chat, payments, mobile app, public circle directory, social feed, likes, file up
 | 5 | Create circle + code | Done | Owner-only, no code yet |
 | 6 | Join + see profiles | Done | Owner adds email manually |
 | 7 | Notes + handoff | Done | Notes without received_at |
-| 8 | Access control | Not started | **Delay launch** |
+| 8 | Access control | Done | **Delay launch** |
 | 9 | Edit / archive / a11y | Not started | Edit only |
 | 10 | Public landing | Not started | Minimal “Sign up / Join” links |
 | 11 | Break tests | Not started | Five manual checks |
