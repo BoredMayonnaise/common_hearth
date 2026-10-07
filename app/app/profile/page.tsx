@@ -37,17 +37,17 @@ async function ProfileBody() {
       <form action={saveProfile} className="grid gap-3">
         <label>
           Display name
-          <input name="display_name" defaultValue={p?.display_name} required className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="display_name" defaultValue={p?.display_name} required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>
           How I show up (one line)
-          <input name="how_i_show_up" defaultValue={p?.how_i_show_up} required className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="how_i_show_up" defaultValue={p?.how_i_show_up} required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>
           Region or role tag (optional)
-          <input name="region_or_role_tag" defaultValue={p?.region_or_role_tag ?? ""} className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="region_or_role_tag" defaultValue={p?.region_or_role_tag ?? ""} className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
-        <button type="submit" className="rounded bg-sky-700 px-4 py-2 text-white">Save</button>
+        <button type="submit" className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800">Save</button>
       </form>
       <p><a className="text-sky-700 underline" href="/">Back home</a></p>
     </>

@@ -23,13 +23,13 @@ export default function LoginPage() {
       <form onSubmit={onSubmit} className="grid gap-3">
         <label>
           Email
-          <input name="email" type="email" required className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="email" type="email" required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>
           Password
-          <input name="password" type="password" required className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="password" type="password" required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
-        <button type="submit" className="rounded bg-sky-700 px-4 py-2 text-white">Sign in</button>
+        <button type="submit" className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800">Sign in</button>
       </form>
       <p><a className="text-sky-700 underline" href="/signup">Need an account? Create one</a></p>
     </main>

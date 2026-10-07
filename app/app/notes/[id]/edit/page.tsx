@@ -76,25 +76,25 @@ async function EditBody({ id }: { id: string }) {
       <form action={editNote} className="grid gap-3">
         <input type="hidden" name="note_id" value={n.id} />
         <label>Title
-          <input name="title" defaultValue={n.title} required className="mt-1 block w-full rounded border border-gray-300 p-2 text-base" />
+          <input name="title" defaultValue={n.title} required className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Situation
-          <textarea name="situation" defaultValue={n.situation} required rows={3} className="mt-1 block w-full rounded border border-gray-300 p-2 text-base" />
+          <textarea name="situation" defaultValue={n.situation} required rows={3} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Steps
-          <textarea name="steps" defaultValue={n.steps} required rows={5} className="mt-1 block w-full rounded border border-gray-300 p-2 text-base" />
+          <textarea name="steps" defaultValue={n.steps} required rows={5} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Never promise
-          <textarea name="never_promise" defaultValue={n.never_promise} required rows={2} className="mt-1 block w-full rounded border border-gray-300 p-2 text-base" />
+          <textarea name="never_promise" defaultValue={n.never_promise} required rows={2} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Access notes
-          <textarea name="access_notes" defaultValue={n.access_notes ?? ""} rows={2} className="mt-1 block w-full rounded border border-gray-300 p-2 text-base" />
+          <textarea name="access_notes" defaultValue={n.access_notes ?? ""} rows={2} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Contact
-          <input name="contact" defaultValue={n.contact ?? ""} className="mt-1 block w-full rounded border border-gray-300 p-2 text-base" />
+          <input name="contact" defaultValue={n.contact ?? ""} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Carrier
-          <select name="carrier_id" defaultValue={n.carrier_id ?? ""} className="mt-1 block w-full rounded border border-gray-300 p-2 text-base">
+          <select name="carrier_id" defaultValue={n.carrier_id ?? ""} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600">
             <option value="">Unassigned</option>
             {memberships.map((m) => (
               <option key={m.id} value={m.id}>{m.display_name} — {m.circle_name}</option>
@@ -102,9 +102,9 @@ async function EditBody({ id }: { id: string }) {
           </select>
         </label>
         <label>Handoff date
-          <input name="handoff_on" type="date" defaultValue={n.handoff_on ? n.handoff_on.toISOString().slice(0, 10) : ""} className="mt-1 block w-full rounded border border-gray-300 p-2 text-base" />
+          <input name="handoff_on" type="date" defaultValue={n.handoff_on ? n.handoff_on.toISOString().slice(0, 10) : ""} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
-        <button type="submit" className="rounded bg-sky-700 px-4 py-2 text-white">Save changes</button>
+        <button type="submit" className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800">Save changes</button>
       </form>
       <form action={archiveNote} className="mt-4">
         <input type="hidden" name="note_id" value={n.id} />

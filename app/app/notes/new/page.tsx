@@ -59,30 +59,30 @@ async function NewNoteBody({ searchParams }: { searchParams: Promise<{ error?: s
       {sp?.error && <p className="mb-4 text-red-600">Please fill in title, situation, steps, and never promise.</p>}
       <form action={createNote} className="grid gap-3">
         <label>Circle
-          <select name="circle_id" required className="mt-1 block w-full rounded border border-gray-300 p-2">
+          <select name="circle_id" required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600">
             {userCircles.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </label>
         <label>Title
-          <input name="title" required className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="title" required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Situation
-          <textarea name="situation" required rows={3} className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <textarea name="situation" required rows={3} className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Steps
-          <textarea name="steps" required rows={5} className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <textarea name="steps" required rows={5} className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Never promise
-          <textarea name="never_promise" required rows={2} className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <textarea name="never_promise" required rows={2} className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Access notes
-          <textarea name="access_notes" rows={2} className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <textarea name="access_notes" rows={2} className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Contact
-          <input name="contact" className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="contact" className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>Carrier
-          <select name="carrier_id" className="mt-1 block w-full rounded border border-gray-300 p-2">
+          <select name="carrier_id" className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600">
             <option value="">Unassigned</option>
             {memberships.map((m) => (
               <option key={m.id} value={m.id}>{m.display_name} — {m.circle_name}</option>
@@ -90,9 +90,9 @@ async function NewNoteBody({ searchParams }: { searchParams: Promise<{ error?: s
           </select>
         </label>
         <label>Handoff date
-          <input name="handoff_on" type="date" className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="handoff_on" type="date" className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
-        <button type="submit" className="rounded bg-sky-700 px-4 py-2 text-white">Save note</button>
+        <button type="submit" className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800">Save note</button>
       </form>
       <p className="mt-4"><a className="text-sky-700 underline" href="/notes">Back to notes</a></p>
     </>

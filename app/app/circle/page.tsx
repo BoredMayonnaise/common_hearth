@@ -106,13 +106,13 @@ async function CircleBody({ searchParams }: { searchParams: Promise<{ join?: str
       ) : (
         <ul className="mb-6 space-y-4">
           {res.rows.map((c) => (
-            <li key={c.id} className="rounded border border-gray-200 p-4">
+            <li key={c.id} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
               <h2 className="text-lg font-semibold">{c.name}</h2>
-              {c.purpose && <p className="text-sm text-gray-600">{c.purpose}</p>}
+              {c.purpose && <p className="text-sm text-stone-600">{c.purpose}</p>}
               <p className="text-sm">Role: {c.role}</p>
               {c.role === "owner" && c.code && (
                 <p className="mt-2">
-                  Invite code to share: <code className="rounded bg-gray-100 px-2 py-1 font-mono">{c.code}</code>
+                  Invite code to share: <code className="rounded bg-stone-100 px-2 py-1 font-mono">{c.code}</code>
                 </p>
               )}
               <h3 className="mt-3 font-semibold">Members</h3>
@@ -134,21 +134,21 @@ async function CircleBody({ searchParams }: { searchParams: Promise<{ join?: str
       <form action={joinCircle} className="grid gap-3 mb-6">
         <label>
           Invite code
-          <input name="code" required className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="code" required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
-        <button type="submit" className="rounded bg-sky-700 px-4 py-2 text-white">Join</button>
+        <button type="submit" className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800">Join</button>
       </form>
       <h2 className="text-xl font-semibold mb-2">Start a circle</h2>
       <form action={createCircle} className="grid gap-3">
         <label>
           Circle name
-          <input name="name" required className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="name" required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>
           One-line purpose (optional)
-          <input name="purpose" className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="purpose" className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
-        <button type="submit" className="rounded bg-sky-700 px-4 py-2 text-white">Start a circle</button>
+        <button type="submit" className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800">Start a circle</button>
       </form>
       <p className="mt-4"><a className="text-sky-700 underline" href="/">Back home</a></p>
     </>

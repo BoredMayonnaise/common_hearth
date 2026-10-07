@@ -49,18 +49,18 @@ async function NotesBody() {
   return (
     <>
       <h1 className="text-2xl font-semibold mb-4">Practice notes</h1>
-      <p className="mb-4"><a className="rounded bg-sky-700 px-4 py-2 text-white no-underline" href="/notes/new">Write a note</a></p>
+      <p className="mb-4"><a className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800 no-underline" href="/notes/new">Write a note</a></p>
 
       <h2 className="text-xl font-semibold mt-6 mb-2">Who is carrying what</h2>
       {carrying.length === 0 ? (
-        <p className="text-sm text-gray-600">Nothing is currently handed off.</p>
+        <p className="text-sm text-stone-600">Nothing is currently handed off.</p>
       ) : (
         <ul className="mb-6 space-y-2">
           {carrying.map((n) => (
-            <li key={n.id} className="rounded border border-gray-200 p-3">
+            <li key={n.id} className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
               <strong>{n.title}</strong> — {n.carrier_name ?? "unassigned"}
               {n.handoff_on ? ` (handoff ${new Date(n.handoff_on).toLocaleDateString()})` : ""}
-              <span className="text-sm text-gray-500"> · {n.circle_name}</span>
+              <span className="text-sm text-stone-500"> · {n.circle_name}</span>
             </li>
           ))}
         </ul>
@@ -72,9 +72,9 @@ async function NotesBody() {
       ) : (
         <ul className="space-y-3">
           {notes.rows.map((n) => (
-            <li key={n.id} className="rounded border border-gray-200 p-4">
+            <li key={n.id} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
               <h3 className="font-semibold">{n.title}</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-stone-600">
                 {n.circle_name} · carrier: {n.carrier_name ?? "unassigned"} · handoff:{" "}
                 {n.handoff_on ? new Date(n.handoff_on).toLocaleDateString() : "none"} ·{" "}
                 {n.received_at ? `received ${new Date(n.received_at).toLocaleDateString()}` : "not received"}

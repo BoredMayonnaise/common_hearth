@@ -23,13 +23,13 @@ export default function SignUpPage() {
       <form action={signUp} className="grid gap-3">
         <label>
           Email
-          <input name="email" type="email" required className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="email" type="email" required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
         <label>
           Password (8+ characters)
-          <input name="password" type="password" minLength={8} required className="mt-1 block w-full rounded border border-gray-300 p-2" />
+          <input name="password" type="password" minLength={8} required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
         </label>
-        <button type="submit" className="rounded bg-sky-700 px-4 py-2 text-white">Create account</button>
+        <button type="submit" className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800">Create account</button>
       </form>
       <p><a className="text-sky-700 underline" href="/login">Already have an account? Sign in</a></p>
     </main>
