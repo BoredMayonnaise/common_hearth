@@ -1,9 +1,27 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
+import { ChevronDown, NotebookPen, Users } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+import { inviteUrl, joinByCode } from "@/lib/invites";
+import { LIMITS, MAX, tooLong } from "@/lib/limits";
+import { rateLimit, retryAfterPhrase } from "@/lib/rate-limit";
+import { relativeDate } from "@/lib/time";
+import ShareInvite from "../share-invite";
+import Alert from "../ui/alert";
+import Badge from "../ui/badge";
+import { ButtonLink } from "../ui/button";
+import { Card } from "../ui/card";
+import EmptyState from "../ui/empty-state";
+import FormFooter from "../ui/form-footer";
+import PageShell from "../ui/shell";
+import SubmitButton from "../ui/submit-button";
+import { Roster, RosterEntry } from "../ui/stamp";
+import { TextField } from "../ui/field";
 
 export const instant = false;
 
@@ -14,7 +32,12 @@ async function createCircle(formData: FormData) {
   if (!uid) redirect("/login");
   const name = String(formData.get("name") || "").trim();
   const purpose = String(formData.get("purpose") || "").trim() || null;
+  const over = tooLong(name, MAX.circleName, "The circle name") || tooLong(purpose ?? "", MAX.circlePurpose, "The purpose");
+  if (over) redirect(`/circle?error=${encodeURIComponent(over)}`);
   if (!name) redirect("/circle?error=1");
+
+  const quota = await rateLimit("circle", uid, LIMITS.createCircle);
+  if (!quota.ok) redirect(`/circle?error=${encodeURIComponent(`You have started several circles today. Try again ${retryAfterPhrase(quota.retryAfterSeconds)}.`)}`);
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -35,10 +58,11 @@ async function createCircle(formData: FormData) {
     await client.query("COMMIT");
   } catch (e) {
     await client.query("ROLLBACK");
-    throw e;
+    redirect(`/circle?error=${encodeURIComponent("Could not create the circle right now. Try again in a moment.")}`);
   } finally {
     client.release();
   }
+  revalidatePath("/circle");
   redirect("/circle");
 }
 
@@ -47,31 +71,27 @@ async function joinCircle(formData: FormData) {
   const session = await getServerSession(authOptions);
   const uid = (session?.user as { id?: string } | undefined)?.id;
   if (!uid) redirect("/login");
-  const code = String(formData.get("code") || "").trim().toLowerCase();
-  if (!code) redirect("/circle?join=empty");
-  const res = await pool.query(
-    "SELECT circle_id, max_uses, expires_at FROM invite_codes WHERE code = $1",
-    [code]
-  );
-  const invite = res.rows[0];
-  if (!invite || (invite.expires_at && new Date(invite.expires_at) < new Date())) {
-    redirect("/circle?join=invalid");
-  }
-  if (invite.max_uses) {
-    const count = await pool.query(
-      "SELECT count(*)::int AS n FROM memberships WHERE circle_id = $1",
-      [invite.circle_id]
-    );
-    if (count.rows[0].n >= invite.max_uses) redirect("/circle?join=full");
-  }
-  await pool.query(
-    "INSERT INTO memberships (circle_id, user_id, role) VALUES ($1, $2, 'member') ON CONFLICT DO NOTHING",
-    [invite.circle_id, uid]
-  );
+  const quota = await rateLimit("join", uid, LIMITS.joinCircle);
+  if (!quota.ok) redirect(`/circle?join=rate&wait=${quota.retryAfterSeconds}`);
+  const result = await joinByCode(String(formData.get("code") || ""), uid);
+  if (!result.ok) redirect(`/circle?join=${result.reason}`);
+  revalidatePath("/circle");
+  revalidatePath("/notes");
   redirect("/circle");
 }
 
-async function CircleBody({ searchParams }: { searchParams: Promise<{ join?: string; error?: string }> }) {
+const joinErrors: Record<string, string> = {
+  empty: "Enter the invite code you were given.",
+  invalid: "That code does not work or has expired.",
+  full: "That code has already been used the maximum number of times.",
+  rate: "Too many join attempts. Wait a moment and try again.",
+};
+
+async function CircleBody({
+  searchParams,
+}: {
+  searchParams: Promise<{ join?: string; error?: string }>;
+}) {
   await connection();
   const sp = await searchParams;
   const session = await getServerSession(authOptions);
@@ -81,7 +101,11 @@ async function CircleBody({ searchParams }: { searchParams: Promise<{ join?: str
   if (!profile.rows[0]) redirect("/profile");
   const res = await pool.query(
     `SELECT c.id, c.name, c.purpose, m.role,
-            (SELECT code FROM invite_codes WHERE circle_id = c.id ORDER BY created_at LIMIT 1) AS code
+            (SELECT code FROM invite_codes WHERE circle_id = c.id ORDER BY created_at LIMIT 1) AS code,
+            (SELECT count(*)::int FROM notes n
+              WHERE n.circle_id = c.id AND n.archived_at IS NULL) AS note_count,
+            (SELECT max(n.changed_at) FROM notes n
+              WHERE n.circle_id = c.id AND n.archived_at IS NULL) AS last_note_at
      FROM memberships m JOIN circles c ON c.id = m.circle_id
      WHERE m.user_id = $1
      ORDER BY m.joined_at`,
@@ -91,74 +115,166 @@ async function CircleBody({ searchParams }: { searchParams: Promise<{ join?: str
     `SELECT m.circle_id, p.display_name, p.how_i_show_up, p.region_or_role_tag
      FROM memberships m
      JOIN profiles p ON p.user_id = m.user_id
-     WHERE m.circle_id IN (SELECT circle_id FROM memberships WHERE user_id = $1)`,
+     WHERE m.circle_id IN (SELECT circle_id FROM memberships WHERE user_id = $1)
+     ORDER BY p.display_name`,
     [uid]
   );
+
+  const joinError = sp?.join ? joinErrors[sp.join] : undefined;
+
   return (
-    <>
-      <h1 className="text-2xl font-semibold mb-4">Your circle</h1>
-      {typeof sp?.join === "string" && sp.join !== "" && (
-        <p className="mb-4 text-red-600">That code does not work or has expired.</p>
-      )}
-      {sp?.error && <p className="mb-4 text-red-600">Please give the circle a name.</p>}
+    <PageShell
+      title="Your circle"
+      subtitle="The people you share a handbook with. What they write here is only visible inside the circle."
+    >
+            {joinError ? (
+        <Alert tone="danger" className="mb-5">
+          {joinError}
+        </Alert>
+      ) : null}
+      {sp?.error ? (
+        <Alert tone="danger" className="mb-5">
+          {sp.error === "1" ? "Please give the circle a name." : sp.error}
+        </Alert>
+      ) : null}
+
       {res.rows.length === 0 ? (
-        <p className="mb-4">No circle yet. Start one below, or join with a code on Day 6.</p>
+        <EmptyState
+          icon={Users}
+          title="Start a circle, or join one with a link"
+          className="mb-8"
+        >
+          Create a circle to get an invite link you can share, or open the link someone you trust
+          sent you. Either way, nobody finds you — the link is the whole door.
+        </EmptyState>
       ) : (
-        <ul className="mb-6 space-y-4">
-          {res.rows.map((c) => (
-            <li key={c.id} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-              <h2 className="text-lg font-semibold">{c.name}</h2>
-              {c.purpose && <p className="text-sm text-stone-600">{c.purpose}</p>}
-              <p className="text-sm">Role: {c.role}</p>
-              {c.role === "owner" && c.code && (
-                <p className="mt-2">
-                  Invite code to share: <code className="rounded bg-stone-100 px-2 py-1 font-mono">{c.code}</code>
-                </p>
-              )}
-              <h3 className="mt-3 font-semibold">Members</h3>
-              <ul className="list-disc pl-5 text-sm">
-                {members.rows
-                  .filter((mm) => mm.circle_id === c.id)
-                  .map((mm) => (
-                    <li key={mm.display_name}>
-                      <strong>{mm.display_name}</strong> — {mm.how_i_show_up}
-                      {mm.region_or_role_tag ? ` (${mm.region_or_role_tag})` : ""}
-                    </li>
-                  ))}
-              </ul>
-            </li>
-          ))}
+        <ul className="mb-8 grid gap-5">
+          {res.rows.map((c) => {
+            const people = members.rows.filter((mm) => mm.circle_id === c.id);
+            return (
+              <li key={c.id}>
+                <Card className="p-4 sm:p-5">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <h2 className="read-me text-[1.375rem] leading-snug text-ink">{c.name}</h2>
+                    <Badge tone={c.role === "owner" ? "brick" : "neutral"}>
+                      {c.role === "owner" ? "You own this" : "Member"}
+                    </Badge>
+                  </div>
+                  {c.purpose ? (
+                    <p className="read-me mt-1 max-w-[46rem] text-[0.9375rem] leading-relaxed text-body">
+                      {c.purpose}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-sm text-body-subtle">
+                    <span className="tabnum">
+                      {c.note_count === 1 ? "1 note" : `${c.note_count} notes`}
+                    </span>
+                    {c.last_note_at ? <> · last touched {relativeDate(c.last_note_at)}</> : null}
+                  </p>
+                  <div className="mt-3">
+                    <ButtonLink href={`/notes/new?circle=${c.id}`} variant="secondary" size="sm">
+                      <NotebookPen aria-hidden="true" className="size-4" />
+                      Write a note
+                    </ButtonLink>
+                  </div>
+
+                  {c.role === "owner" && c.code ? (
+                    <div className="mt-4 max-w-sm">
+                      <ShareInvite link={inviteUrl(c.code)} code={c.code} circleName={c.name} />
+                    </div>
+                  ) : null}
+
+                  <h3 className="mt-5 mb-2 flex items-baseline gap-2 text-[0.8125rem] font-semibold text-ink">
+                    Members
+                    <span className="tabnum font-normal text-body-subtle">{people.length}</span>
+                  </h3>
+                  <Roster>
+                    {people.map((mm) => (
+                      <RosterEntry
+                        key={`${mm.circle_id}-${mm.display_name}`}
+                        name={mm.display_name}
+                        tag={mm.region_or_role_tag}
+                        line={mm.how_i_show_up}
+                      />
+                    ))}
+                  </Roster>
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       )}
-      <h2 className="text-xl font-semibold mb-2">Join with a code</h2>
-      <form action={joinCircle} className="grid gap-3 mb-6">
-        <label>
-          Invite code
-          <input name="code" required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        </label>
-        <button type="submit" className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800">Join</button>
-      </form>
-      <h2 className="text-xl font-semibold mb-2">Start a circle</h2>
-      <form action={createCircle} className="grid gap-3">
-        <label>
-          Circle name
-          <input name="name" required className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        </label>
-        <label>
-          One-line purpose (optional)
-          <input name="purpose" className="mt-1 block w-full rounded border border-stone-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        </label>
-        <button type="submit" className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800">Start a circle</button>
-      </form>
-      <p className="mt-4"><a className="text-sky-700 underline" href="/">Back home</a></p>
-    </>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card className="p-4 sm:p-5">
+          <h2 className="read-me border-b border-ink pb-2 text-[1.125rem] text-ink">
+            Join a circle
+          </h2>
+          <p className="read-me mt-3 text-[0.9375rem] text-body">
+            If someone sent you an invite link, just open it &mdash; you will land back here already
+            inside.
+          </p>
+          <details className="group mt-4">
+            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-base text-sm font-medium text-brick marker:content-none">
+              <ChevronDown aria-hidden="true" className="size-4 transition-transform group-open:rotate-90" />
+              Or enter a code
+            </summary>
+            <form action={joinCircle} className="mt-4 grid gap-4">
+              <TextField
+                name="code"
+                label="Invite code"
+                hint="Ask the person who started the circle."
+                autoCapitalize="none"
+                autoCorrect="off"
+                autoComplete="off"
+                spellCheck={false}
+                inputMode="text"
+                enterKeyHint="go"
+                className="tabnum tracking-[0.12em] uppercase"
+                required
+              />
+              <FormFooter>
+                <SubmitButton pendingLabel="Joining…">Join circle</SubmitButton>
+              </FormFooter>
+            </form>
+          </details>
+        </Card>
+
+        <Card className="p-4 sm:p-5">
+          <h2 className="read-me border-b border-ink pb-2 text-[1.125rem] text-ink">
+            Start a circle
+          </h2>
+          <form action={createCircle} className="mt-4 grid gap-4">
+            <TextField name="name" label="Circle name" maxLength={MAX.circleName} enterKeyHint="next" required />
+            <TextField
+              name="purpose"
+              label="One-line purpose"
+              hint="What this circle is for, in a sentence."
+              maxLength={MAX.circlePurpose}
+              enterKeyHint="go"
+            />
+            <FormFooter>
+              <SubmitButton pendingLabel="Creating…" variant="secondary">
+                Start a circle
+              </SubmitButton>
+            </FormFooter>
+          </form>
+        </Card>
+      </div>
+
+      <p className="mt-8 text-sm text-body">
+        <Link href="/" className="text-brick underline underline-offset-2">
+          Back home
+        </Link>
+      </p>
+    </PageShell>
   );
 }
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ join?: string; error?: string }> }) {
-  return (
-    <main className="mx-auto max-w-2xl p-8 font-sans">
-      <CircleBody searchParams={searchParams} />
-    </main>
-  );
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ join?: string; error?: string }>;
+}) {
+  return <CircleBody searchParams={searchParams} />;
 }

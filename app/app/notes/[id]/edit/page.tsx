@@ -1,9 +1,18 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
 import { membershipsForUser } from "@/lib/membership";
+import { noteById, invalidateCircleNotesCache } from "@/lib/notes";
+import Alert from "../../../ui/alert";
+import { Card, Fieldset } from "../../../ui/card";
+import FormFooter from "../../../ui/form-footer";
+import PageShell from "../../../ui/shell";
+import SubmitButton from "../../../ui/submit-button";
+import { SelectField, TextAreaField, TextField } from "../../../ui/field";
 
 export const instant = false;
 
@@ -37,6 +46,8 @@ async function editNote(formData: FormData) {
       String(formData.get("handoff_on") || "") || null,
     ]
   );
+  await invalidateCircleNotesCache(note.rows[0].circle_id);
+  revalidatePath("/notes");
   redirect("/notes");
 }
 
@@ -54,72 +65,148 @@ async function archiveNote(formData: FormData) {
   );
   if (!isMember.rows[0]) redirect("/notes?error=forbidden");
   await pool.query("UPDATE notes SET archived_at = now(), changed_at = now() WHERE id = $1", [noteId]);
+  await invalidateCircleNotesCache(note.rows[0].circle_id);
+  revalidatePath("/notes");
   redirect("/notes");
 }
 
-async function EditBody({ id }: { id: string }) {
+function toDateInput(value: unknown) {
+  if (!value) return "";
+  if (typeof value === "string") return value.slice(0, 10);
+  return new Date(value as string).toISOString().slice(0, 10);
+}
+
+async function EditBody({
+  id,
+  searchParams,
+}: {
+  id: string;
+  searchParams: Promise<{ error?: string }>;
+}) {
   await connection();
+  const sp = await searchParams;
   const session = await getServerSession(authOptions);
   const uid = (session?.user as { id?: string } | undefined)?.id;
   if (!uid) redirect("/login");
-  const note = await pool.query(
-    `SELECT n.* FROM notes n
-     WHERE n.id = $1 AND n.circle_id IN (SELECT circle_id FROM memberships WHERE user_id = $2) AND n.archived_at IS NULL`,
-    [id, uid]
-  );
-  const n = note.rows[0];
+  const n = await noteById(id, uid);
   if (!n) redirect("/notes");
   const memberships = await membershipsForUser(uid);
+
   return (
-    <>
-      <h1 className="text-2xl font-semibold mb-4">Edit note</h1>
-      <form action={editNote} className="grid gap-3">
-        <input type="hidden" name="note_id" value={n.id} />
-        <label>Title
-          <input name="title" defaultValue={n.title} required className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        </label>
-        <label>Situation
-          <textarea name="situation" defaultValue={n.situation} required rows={3} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        </label>
-        <label>Steps
-          <textarea name="steps" defaultValue={n.steps} required rows={5} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        </label>
-        <label>Never promise
-          <textarea name="never_promise" defaultValue={n.never_promise} required rows={2} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        </label>
-        <label>Access notes
-          <textarea name="access_notes" defaultValue={n.access_notes ?? ""} rows={2} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        </label>
-        <label>Contact
-          <input name="contact" defaultValue={n.contact ?? ""} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        </label>
-        <label>Carrier
-          <select name="carrier_id" defaultValue={n.carrier_id ?? ""} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600">
-            <option value="">Unassigned</option>
-            {memberships.map((m) => (
-              <option key={m.id} value={m.id}>{m.display_name} — {m.circle_name}</option>
-            ))}
-          </select>
-        </label>
-        <label>Handoff date
-          <input name="handoff_on" type="date" defaultValue={n.handoff_on ? n.handoff_on.toISOString().slice(0, 10) : ""} className="mt-1 block w-full rounded border border-stone-300 p-2 text-base rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-600" />
-        </label>
-        <button type="submit" className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800">Save changes</button>
-      </form>
-      <form action={archiveNote} className="mt-4">
-        <input type="hidden" name="note_id" value={n.id} />
-        <button type="submit" className="rounded border border-red-700 px-4 py-2 text-red-700">Archive this note</button>
-      </form>
-      <p className="mt-4"><a className="text-sky-700 underline" href="/notes">Back to notes</a></p>
-    </>
+    <PageShell
+      title="Edit note"
+      meta={<span className="text-sm text-body-subtle">{n.circle_name}</span>}
+    >
+      {sp?.error ? (
+        <Alert tone="danger" className="mb-5">
+          Fill in the title, situation, steps, and never promise.
+        </Alert>
+      ) : null}
+
+      <Card className="p-4 sm:p-6">
+        <form action={editNote} className="grid gap-7">
+          <input type="hidden" name="note_id" value={n.id} />
+
+          <Fieldset legend="The note">
+            <TextField
+              name="title"
+              label="Title"
+              defaultValue={n.title}
+              enterKeyHint="next"
+              required
+            />
+            <TextAreaField name="situation" label="Situation" rows={3} defaultValue={n.situation} required />
+            <TextAreaField name="steps" label="Steps" rows={5} defaultValue={n.steps} required />
+            <TextAreaField
+              name="never_promise"
+              label="Never promise"
+              rows={2}
+              defaultValue={n.never_promise}
+              required
+            />
+          </Fieldset>
+
+          <Fieldset legend="Access and contact">
+            <TextAreaField
+              name="access_notes"
+              label="Access notes"
+              rows={2}
+              defaultValue={n.access_notes ?? ""}
+            />
+            <TextField
+              name="contact"
+              label="Contact"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              defaultValue={n.contact ?? ""}
+              enterKeyHint="done"
+            />
+          </Fieldset>
+
+          <Fieldset legend="The handoff">
+            <SelectField name="carrier_id" label="Carrier" defaultValue={n.carrier_id ?? ""}>
+              <option value="">Unassigned</option>
+              {memberships.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.display_name} — {m.circle_name}
+                </option>
+              ))}
+            </SelectField>
+            <TextField
+              name="handoff_on"
+              label="Handoff date"
+              type="date"
+              defaultValue={toDateInput(n.handoff_on)}
+            />
+          </Fieldset>
+
+          <FormFooter flashTo="/notes" flashMessage="Changes saved.">
+            <SubmitButton pendingLabel="Saving changes…">Save changes</SubmitButton>
+          </FormFooter>
+        </form>
+      </Card>
+
+      <Card className="mt-6 border-l-2 border-l-brick p-4 sm:p-5">
+        <h2 className="read-me border-b border-ink pb-2 text-[1.125rem] text-ink">
+          Archive this note
+        </h2>
+        <p className="read-me mt-2 max-w-[44rem] text-[0.9375rem] leading-relaxed text-body">
+          Archiving takes it out of the handbook for everyone in the circle. The note is kept, but
+          it stops appearing in the list and cannot be found by search.
+        </p>
+        <FormFooter
+          sticky={false}
+          flashTo="/notes"
+          flashMessage="Note archived. It is out of the handbook now."
+          inset="-mx-4 px-4"
+          className="mt-4"
+        >
+          <form action={archiveNote}>
+            <input type="hidden" name="note_id" value={n.id} />
+            <SubmitButton variant="danger" pendingLabel="Archiving…">
+              Archive this note
+            </SubmitButton>
+          </form>
+        </FormFooter>
+      </Card>
+
+      <p className="mt-6 text-sm text-body">
+        <Link href="/notes" className="text-brick underline underline-offset-2">
+          Back to notes
+        </Link>
+      </p>
+    </PageShell>
   );
 }
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { id } = await params;
-  return (
-    <main className="mx-auto max-w-2xl p-8 font-sans">
-      <EditBody id={id} />
-    </main>
-  );
+  return <EditBody id={id} searchParams={searchParams} />;
 }

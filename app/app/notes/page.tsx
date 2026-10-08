@@ -1,106 +1,194 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import { NotebookPen, PencilLine } from "lucide-react";
 import { authOptions } from "@/lib/auth";
 import pool from "@/lib/db";
+import { notesForUser } from "@/lib/notes";
+import { ButtonLink } from "../ui/button";
+import { IndexCard } from "../ui/card";
+import EmptyState from "../ui/empty-state";
+import Alert from "../ui/alert";
+import Badge from "../ui/badge";
+import PageShell from "../ui/shell";
+import MarkReceivedButton from "./mark-received-button";
+import { ConsumeFlash } from "../ui/toast";
 
 export const instant = false;
 
-async function markReceived(formData: FormData) {
-  "use server";
-  const session = await getServerSession(authOptions);
-  const uid = (session?.user as { id?: string } | undefined)?.id;
-  if (!uid) redirect("/login");
-  const noteId = String(formData.get("note_id"));
-  const note = await pool.query("SELECT circle_id FROM notes WHERE id = $1", [noteId]);
-  if (!note.rows[0]) redirect("/notes?error=notfound");
-  const mine = await pool.query(
-    "SELECT id FROM memberships WHERE circle_id = $1 AND user_id = $2",
-    [note.rows[0].circle_id, uid]
-  );
-  if (!mine.rows[0]) redirect("/notes?error=forbidden");
-  await pool.query(
-    "UPDATE notes SET received_at = now(), carrier_id = $2, changed_at = now() WHERE id = $1",
-    [noteId, mine.rows[0].id]
-  );
-  redirect("/notes");
+const listErrors: Record<string, string> = {
+  notfound: "That note no longer exists.",
+  forbidden: "You are not a member of this circle.",
+};
+
+function formatDate(value: string | Date) {
+  return new Date(value).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
-async function NotesBody() {
+async function NotesBody({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   await connection();
+  const sp = await searchParams;
   const session = await getServerSession(authOptions);
   const uid = (session?.user as { id?: string } | undefined)?.id;
   if (!uid) redirect("/login");
   const profile = await pool.query("SELECT display_name FROM profiles WHERE user_id = $1", [uid]);
   if (!profile.rows[0]) redirect("/profile");
-  const notes = await pool.query(
-    `SELECT n.id, n.title, n.handoff_on, n.received_at, n.archived_at,
-            c.name AS circle_name, p.display_name AS carrier_name
-     FROM notes n
-     JOIN circles c ON c.id = n.circle_id
-     LEFT JOIN memberships m ON m.id = n.carrier_id
-     LEFT JOIN profiles p ON p.user_id = m.user_id
-     WHERE n.circle_id IN (SELECT circle_id FROM memberships WHERE user_id = $1)
-       AND n.archived_at IS NULL
-     ORDER BY n.handoff_on NULLS LAST, n.created_at`,
-    [uid]
-  );
-  const carrying = notes.rows.filter((n) => !n.received_at && n.carrier_name);
+  const notes = await notesForUser(uid);
+  const carrying = notes.filter((n) => !n.received_at && n.carrier_name);
+  const listError = sp?.error ? listErrors[sp.error] : undefined;
+
   return (
     <>
-      <h1 className="text-2xl font-semibold mb-4">Practice notes</h1>
-      <p className="mb-4"><a className="rounded rounded-lg bg-sky-700 px-4 py-2 text-white hover:bg-sky-800 no-underline" href="/notes/new">Write a note</a></p>
+      <ConsumeFlash path="/notes" />
+      <PageShell
+      title="Practice notes"
+      subtitle="The living handbook your circle keeps for each other."
+      actions={
+        <ButtonLink href="/notes/new">
+          <NotebookPen aria-hidden="true" className="size-4" />
+          Write a note
+        </ButtonLink>
+      }
+    >
+      {listError ? (
+        <Alert tone="danger" className="mb-6">
+          {listError}
+        </Alert>
+      ) : null}
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">Who is carrying what</h2>
-      {carrying.length === 0 ? (
-        <p className="text-sm text-stone-600">Nothing is currently handed off.</p>
-      ) : (
-        <ul className="mb-6 space-y-2">
-          {carrying.map((n) => (
-            <li key={n.id} className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
-              <strong>{n.title}</strong> — {n.carrier_name ?? "unassigned"}
-              {n.handoff_on ? ` (handoff ${new Date(n.handoff_on).toLocaleDateString()})` : ""}
-              <span className="text-sm text-stone-500"> · {n.circle_name}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <section aria-labelledby="carrying-heading">
+        <h2
+          id="carrying-heading"
+          className="read-me border-b border-ink pb-2 text-[1.25rem] text-ink"
+        >
+          Who is carrying what
+        </h2>
+        {carrying.length === 0 ? (
+          <p className="read-me mt-3 text-[0.9375rem] text-body">
+            Nothing is handed off right now. Every note has landed with its carrier.
+          </p>
+        ) : (
+          <ul className="mt-4 grid gap-3">
+            {carrying.map((n) => (
+              <li key={n.id}>
+                <div className="flex items-stretch gap-3">
+                  <span aria-hidden="true" className="w-1 shrink-0 rounded-[1px] bg-brick" />
+                  <div className="min-w-0 flex-1 rounded-base border border-rule bg-card px-4 py-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                      <p className="read-me text-[1.0625rem] leading-snug text-ink">{n.title}</p>
+                      <Badge tone="brick">{n.carrier_name} is carrying</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-body">
+                      {n.handoff_on ? `Handoff on ${formatDate(n.handoff_on)}` : "No handoff date set"}
+                      <span className="text-body-subtle"> · {n.circle_name}</span>
+                    </p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
-      <h2 className="text-xl font-semibold mb-2">All notes</h2>
-      {notes.rows.length === 0 ? (
-        <p>Write the thing only you remember.</p>
-      ) : (
-        <ul className="space-y-3">
-          {notes.rows.map((n) => (
-            <li key={n.id} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-              <h3 className="font-semibold">{n.title}</h3>
-              <p className="text-sm text-stone-600">
-                {n.circle_name} · carrier: {n.carrier_name ?? "unassigned"} · handoff:{" "}
-                {n.handoff_on ? new Date(n.handoff_on).toLocaleDateString() : "none"} ·{" "}
-                {n.received_at ? `received ${new Date(n.received_at).toLocaleDateString()}` : "not received"}
-              </p>
-              <p className="mt-2"><a className="text-sky-700 underline" href={`/notes/${n.id}/edit`}>Edit</a></p>
-              {!n.received_at && (
-                <form action={markReceived} className="mt-2">
-                  <input type="hidden" name="note_id" value={n.id} />
-                  <button type="submit" className="rounded border border-sky-700 px-3 py-1 text-sky-700">
-                    Mark handoff received
-                  </button>
-                </form>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="mt-4"><a className="text-sky-700 underline" href="/">Back home</a></p>
+      <section aria-labelledby="all-notes-heading" className="mt-10">
+        <h2
+          id="all-notes-heading"
+          className="read-me border-b border-ink pb-2 text-[1.25rem] text-ink"
+        >
+          All notes
+        </h2>
+        {notes.length === 0 ? (
+          <EmptyState
+            icon={NotebookPen}
+            title="Write the thing only you remember."
+            className="mt-4"
+            action={
+              <ButtonLink href="/notes/new" variant="secondary" full={false}>
+                <NotebookPen aria-hidden="true" className="size-4" />
+                Write a note
+              </ButtonLink>
+            }
+          />
+        ) : (
+          <ul className="mt-4 grid gap-4">
+            {notes.map((n) => {
+              const stepLines = String(n.steps || "")
+                .split("\n")
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .slice(0, 3);
+              return (
+                <li key={n.id}>
+                  <IndexCard bodyClassName="py-4">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                      <h3 className="read-me text-[1.25rem] leading-snug text-ink">{n.title}</h3>
+                      <Badge tone={n.received_at ? "pine" : "brick"}>
+                        {n.received_at ? `Received ${formatDate(n.received_at)}` : "Not received"}
+                      </Badge>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-body">
+                      <span>{n.circle_name}</span>
+                      <span>
+                        {n.carrier_name ? `Carried by ${n.carrier_name}` : "No carrier"}
+                      </span>
+                      <span className="text-body-subtle">
+                        {n.handoff_on ? `Handoff ${formatDate(n.handoff_on)}` : "No handoff date"}
+                      </span>
+                    </div>
+
+                    {n.situation ? (
+                      <p className="read-me prose-note mt-3 max-w-[46rem] text-[0.9375rem] leading-relaxed text-body">
+                        {n.situation}
+                      </p>
+                    ) : null}
+
+                    {stepLines.length > 0 ? (
+                      <ol className="mt-3 border-t border-rule-soft pt-3">
+                        {stepLines.map((s, i) => (
+                          <li key={i} className="flex gap-3 py-1">
+                            <span aria-hidden="true" className="tabnum w-4 shrink-0 text-right text-sm text-ink-3">
+                              {i + 1}
+                            </span>
+                            <span className="read-me min-w-0 flex-1 text-[0.9375rem] leading-snug text-ink">
+                              {s}
+                            </span>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : null}
+
+                    <div className="mt-4 flex flex-col gap-2 border-t border-rule-soft pt-3 min-[420px]:flex-row">
+                      <ButtonLink href={`/notes/${n.id}/edit`} variant="secondary" size="sm">
+                        <PencilLine aria-hidden="true" className="size-4" />
+                        Edit
+                      </ButtonLink>
+                      {!n.received_at ? (
+                        <MarkReceivedButton noteId={n.id} />
+                      ) : null}
+                    </div>
+                  </IndexCard>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <p className="mt-8 text-sm text-body">
+        <Link href="/" className="text-brick underline underline-offset-2">
+          Back home
+        </Link>
+      </p>
+    </PageShell>
     </>
   );
 }
 
-export default async function Page() {
-  return (
-    <main className="mx-auto max-w-2xl p-8 font-sans">
-      <NotesBody />
-    </main>
-  );
+export default async function Page({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  return <NotesBody searchParams={searchParams} />;
 }

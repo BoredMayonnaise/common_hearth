@@ -61,3 +61,15 @@ CREATE TABLE notes (
 
 CREATE INDEX notes_circle_id_idx ON notes (circle_id);
 CREATE INDEX memberships_user_id_idx ON memberships (user_id);
+
+-- Password reset tokens. Single-use, short-lived.
+CREATE TABLE password_reset_tokens (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash text NOT NULL,
+  expires_at timestamptz NOT NULL,
+  used_at    timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX password_reset_tokens_user_id_idx ON password_reset_tokens (user_id);
